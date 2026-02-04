@@ -1,0 +1,78 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      llm_provider:
+        description: 'LLM Provider'
+        required: true
+        default: 'kimi'
+        type: choice
+        options:
+          - kimi
+          - openai
+          - anthropic
+          - deepseek
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Configure Environment Variables (KIMI)
+        if: github.event.inputs.llm_provider == 'kimi' || github.event.inputs.llm_provider == ''
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
+          railway variables set LLM_MODEL=kimi-k2-turbo-preview
+          railway variables set LLM_API_KEY=${{ secrets.KIMI_API_KEY }}
+          railway variables set LLM_BASE_URL=https://api.moonshot.cn/v1
+          railway variables set SANDBOX_TYPE=local
+          railway variables set AGENT_MEMORY_ENABLED=true
+
+      - name: Configure Environment Variables (OpenAI)
+        if: github.event.inputs.llm_provider == 'openai'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
+          railway variables set LLM_MODEL=gpt-4o
+          railway variables set LLM_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          railway variables set LLM_BASE_URL=https://api.openai.com/v1
+          railway variables set SANDBOX_TYPE=local
+          railway variables set AGENT_MEMORY_ENABLED=true
+
+      - name: Configure Environment Variables (Anthropic)
+        if: github.event.inputs.llm_provider == 'anthropic'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
+          railway variables set LLM_MODEL=claude-3-5-sonnet-20241022
+          railway variables set LLM_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+          railway variables set SANDBOX_TYPE=local
+          railway variables set AGENT_MEMORY_ENABLED=true
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service ${{ secrets.RAILWAY_SERVICE_ID }}
+
+      - name: Get Deployment URL
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "Deployment URL: $(railway domain)"

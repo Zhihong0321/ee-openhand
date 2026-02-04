@@ -1,0 +1,53 @@
+# OpenHands Dockerfile for Railway Deployment
+# Based on the official OpenHands image with modifications for Railway
+
+FROM docker.all-hands.dev/all-hands-ai/openhands:0.30
+
+# Override environment variables for Railway
+ENV SANDBOX_TYPE=local
+ENV USE_HOST_NETWORK=false
+ENV SANDBOX_LOCAL_RUNTIME_URL=http://localhost
+ENV WORKSPACE_BASE=/opt/workspace_base
+ENV FILE_STORE_PATH=/.openhands
+ENV PORT=3000
+
+# Install gosu for user switching
+USER root
+RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
+
+# Create entrypoint script for Railway
+RUN cat > /app/railway-entrypoint.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "========================================="
+echo "OpenHands Starting on Railway"
+echo "========================================="
+echo "PORT: ${PORT}"
+echo "WORKSPACE_BASE: ${WORKSPACE_BASE}"
+echo "FILE_STORE_PATH: ${FILE_STORE_PATH}"
+
+# Ensure directories exist and have correct permissions
+mkdir -p ${WORKSPACE_BASE}
+mkdir -p ${FILE_STORE_PATH}
+
+# Fix permissions
+chown -R openhands:openhands ${WORKSPACE_BASE} 2>/dev/null || true
+chown -R openhands:openhands ${FILE_STORE_PATH} 2>/dev/null || true
+
+echo "Starting OpenHands server..."
+
+# Switch to openhands user and start the server
+exec gosu openhands uvicorn openhands.server.listen:app \
+    --host 0.0.0.0 \
+    --port ${PORT:-3000} \
+    --loop uvloop \
+    --http h11 \
+    --ws websockets
+EOF
+
+RUN chmod +x /app/railway-entrypoint.sh
+
+EXPOSE 3000
+
+ENTRYPOINT ["/app/railway-entrypoint.sh"]
