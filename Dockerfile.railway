@@ -1,7 +1,7 @@
 # OpenHands Dockerfile for Railway Deployment
-# Based on the official OpenHands image with modifications for Railway
+# Uses GitHub Container Registry (ghcr.io) which is accessible from Railway
 
-FROM docker.all-hands.dev/all-hands-ai/openhands:0.30
+FROM ghcr.io/all-hands-ai/openhands:0.30
 
 # Override environment variables for Railway
 ENV SANDBOX_TYPE=local
@@ -26,6 +26,7 @@ echo "========================================="
 echo "PORT: ${PORT}"
 echo "WORKSPACE_BASE: ${WORKSPACE_BASE}"
 echo "FILE_STORE_PATH: ${FILE_STORE_PATH}"
+echo "LLM_MODEL: ${LLM_MODEL:-not set}"
 
 # Ensure directories exist and have correct permissions
 mkdir -p ${WORKSPACE_BASE}
