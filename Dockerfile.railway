@@ -39,10 +39,10 @@ chown -R openhands:openhands ${FILE_STORE_PATH} 2>/dev/null || true
 echo "Starting OpenHands server..."
 
 # Switch to openhands user and start the server
+# Using default asyncio loop instead of uvloop (not installed)
 exec gosu openhands uvicorn openhands.server.listen:app \
     --host 0.0.0.0 \
     --port ${PORT:-3000} \
-    --loop uvloop \
     --http h11 \
     --ws websockets
 EOF
