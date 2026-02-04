@@ -39,12 +39,10 @@ chown -R openhands:openhands ${FILE_STORE_PATH} 2>/dev/null || true
 echo "Starting OpenHands server..."
 
 # Switch to openhands user and start the server
-# Using default asyncio loop instead of uvloop (not installed)
+# Using default auto protocols (works without uvloop and websockets packages)
 exec gosu openhands uvicorn openhands.server.listen:app \
     --host 0.0.0.0 \
-    --port ${PORT:-3000} \
-    --http h11 \
-    --ws websockets
+    --port ${PORT:-3000}
 EOF
 
 RUN chmod +x /app/railway-entrypoint.sh
